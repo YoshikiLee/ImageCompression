@@ -1,3 +1,5 @@
+var del         = require('del');
+var path        = require('path');
 var gulp        = require('gulp');
 var changed     = require('gulp-changed');
 var imagemin    = require('gulp-imagemin');
@@ -5,6 +7,7 @@ var svgmin      = require('gulp-svgmin');
 var imageminJpg = require('imagemin-jpeg-recompress');
 var imageminPng = require('imagemin-pngquant');
 var imageminGif = require('imagemin-gifsicle');
+var log         = require('fancy-log');
 
 var paths = {
   srcDir : 'src',
@@ -37,6 +40,16 @@ gulp.task('svgmin', function(){
     .pipe(gulp.dest( dstGlob ));
 });
 
-gulp.task('default', function(){
-  gulp.watch(paths.srcDir + '/**/*', ['imagemin','svgmin']);
+gulp.task('watch', function(){
+  var watchGlob = paths.srcDir + '/**/*.+(jpg|jpeg|png|gif)';
+  var watcher = gulp.watch(watchGlob, {interval: 500}, ['imagemin']);
+  watcher.on('change', function(event) {
+      log('file: ' + event.path + ', ' + 'type: ' + event.type);
+      if (event.type === 'deleted') {
+          var filePathFromSrc = path.relative(path.resolve(paths.srcDir), event.path);
+          var destFilePath = path.resolve(paths.dstDir, filePathFromSrc);
+          del.sync(destFilePath);
+          log(destFilePath + ' deleted');
+      }
+  });
 });
