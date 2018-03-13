@@ -8,10 +8,12 @@ var imageminJpg = require('imagemin-jpeg-recompress');
 var imageminPng = require('imagemin-pngquant');
 var imageminGif = require('imagemin-gifsicle');
 var log         = require('fancy-log');
+var zip         = require('gulp-zip');
+var rev         = require('gulp-date-rev');
 
 var paths = {
-  srcDir : 'src',
-  dstDir : 'dist'
+  srcDir : 'PIC',
+  dstDir : 'PIC_Compressed'
 }
 
 gulp.task('imagemin', function(){
@@ -42,14 +44,31 @@ gulp.task('svgmin', function(){
 
 gulp.task('watch', function(){
   var watchGlob = paths.srcDir + '/**/*.+(jpg|jpeg|png|gif)';
-  var watcher = gulp.watch(watchGlob, {interval: 500}, ['imagemin']);
+  var watcher = gulp.watch(watchGlob, {interval: 5000}, ['imagemin']);
   watcher.on('change', function(event) {
       log('file: ' + event.path + ', ' + 'type: ' + event.type);
-      if (event.type === 'deleted') {
+      if (event.type === 'deleted' || event.type === 'changed') {
           var filePathFromSrc = path.relative(path.resolve(paths.srcDir), event.path);
           var destFilePath = path.resolve(paths.dstDir, filePathFromSrc);
           del.sync(destFilePath);
           log(destFilePath + ' deleted');
       }
   });
+});
+
+gulp.task('backup', function(){
+    var zipfile = paths.srcDir + '.zip';
+    gulp.src(paths.srcDir + '/*', {base: paths.srcDir})
+    .pipe(zip(zipfile))
+    .pipe(rev(zipfile))
+    .pipe(gulp.dest('.'));
+});
+
+gulp.task('clean', function(){
+     del(paths.srcDir, {force:true});
+});
+
+gulp.task('copy', function(){
+     gulp.src(paths.dstDir + '/**/*')
+     .pipe(gulp.dest(paths.srcDir));
 });
